@@ -1,120 +1,76 @@
 import pandas as pd
+import os
+import joblib
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, roc_auc_score
+from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
-import joblib
 
-df = pd.read_csv("/Users/km/Documents/VSPROJ/ML_Predidtion_rend/Performance_predition/datos/datos_actividades_1000.csv")
+def train_model(ruta_csv=None, carpeta_dataset="datos", guardar_modelo="app/model.pkl"):
+    """
+    Entrena modelos usando todos los CSV en carpeta_dataset + ruta_csv opcional.
+    """
+    # 1️⃣ Crear carpeta si no existe
+    os.makedirs(carpeta_dataset, exist_ok=True)
 
-# ============================
-# 2. Preprocesamiento
-# ============================
-le = LabelEncoder()
-df["tipo_actividad"] = le.fit_transform(df["tipo_actividad"])
+    # 2️⃣ Guardar CSV nuevo si se pasa
+    if ruta_csv:
+        nombre = os.path.basename(ruta_csv)
+        destino = os.path.join(carpeta_dataset, nombre)
+        os.rename(ruta_csv, destino)
+        print(f"Archivo {nombre} agregado a {carpeta_dataset}")
 
-# Crear variables dummy (binarias)
-X = pd.get_dummies(df.drop("nivel_comprension", axis=1),  # eliminamos target
-                   columns=["tipo_actividad"],            # columna a binarizar
-                   drop_first=True)                        # evita multicolinealidad
+    # 3️⃣ Cargar todos los CSV acumulados
+    archivos = [os.path.join(carpeta_dataset, f) for f in os.listdir(carpeta_dataset) if f.endswith(".csv")]
+    if not archivos:
+        raise FileNotFoundError("No hay archivos CSV en la carpeta de dataset.")
 
-# Target
-y = df["nivel_comprension"]
+    dfs = [pd.read_csv(f) for f in archivos]
+    df_total = pd.concat(dfs, ignore_index=True)
+    print(f"Entrenando con {len(df_total)} filas de {len(archivos)} archivos")
 
+    # 4️⃣ Preprocesamiento
+    le = LabelEncoder()
+    df_total["tipo_actividad"] = le.fit_transform(df_total["tipo_actividad"])
 
-# División entrenamiento-prueba
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    # ===== Modelo nivel_comprension =====
+    X_comp = pd.get_dummies(df_total.drop("nivel_comprension", axis=1), columns=["tipo_actividad"], drop_first=True)
+    y_comp = df_total["nivel_comprension"]
 
-# Entrenar Random Forest
-modelo_compresion = RandomForestRegressor(n_estimators=300, random_state=42)
-modelo_compresion.fit(X_train, y_train)
+    X_train, X_test, y_train, y_test = train_test_split(X_comp, y_comp, test_size=0.2, random_state=42)
+    modelo_compresion = RandomForestRegressor(n_estimators=300, random_state=42)
+    modelo_compresion.fit(X_train, y_train)
+    print("R² nivel_comprension:", modelo_compresion.score(X_test, y_test))
 
-# Evaluar R²
-r2 = modelo_compresion.score(X_test, y_test)
-print("R²:", r2)
+    # ===== Modelo exito =====
+    df_total["exito"] = ((df_total["nota"] >= 7) & (df_total["correcto"] == 1)).astype(int)
+    mask = np.random.rand(len(df_total)) < 0.05
+    df_total.loc[mask, "exito"] = 1 - df_total.loc[mask, "exito"]
 
-# Creamos la variable "exito"
-df["exito"] = ((df["nota"] >= 7) & (df["correcto"] == 1)).astype(int)
-mask = np.random.rand(len(df)) < 0.05
-df.loc[mask, "exito"] = 1 - df.loc[mask, "exito"]
-# Convertir 'tipo_actividad' en variables binarias
-X = pd.get_dummies(df.drop("exito", axis=1), columns=["tipo_actividad"], drop_first=True)
-y = df["exito"]
+    X_exito = pd.get_dummies(df_total.drop("exito", axis=1), columns=["tipo_actividad"], drop_first=True)
+    y_exito = df_total["exito"]
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X_exito, y_exito, test_size=0.2, random_state=42)
+    modelo_exito = LogisticRegression(max_iter=1000, solver='liblinear')
+    modelo_exito.fit(X_train, y_train)
+    probs = modelo_exito.predict_proba(X_test)[:,1]
+    y_pred = modelo_exito.predict(X_test)
+    from sklearn.metrics import accuracy_score, roc_auc_score
+    print("Accuracy exito:", accuracy_score(y_test, y_pred))
+    print("AUC ROC exito:", roc_auc_score(y_test, probs))
 
-modelo_exito = LogisticRegression(max_iter=1000, C=1.0, solver='liblinear')
-modelo_exito.fit(X_train, y_train)
-
-# Probabilidad de éxito
-probs = modelo_exito.predict_proba(X_test)[:,1]
-print("Ejemplo de probabilidad de éxito:", probs[:5])
-
-# Predicciones binarias
-y_pred = modelo_exito.predict(X_test)
-
-print("Accuracy:", accuracy_score(y_test, y_pred))
-print("AUC ROC:", roc_auc_score(y_test, probs))
-
-def recomendar_actividad_dict(datos_estudiante, X, modelo_compresion, modelo_exito):
-    nuevo_estudiante = pd.DataFrame([datos_estudiante])
-
-    # Binarizar tipo_actividad
-    if "tipo_actividad" in nuevo_estudiante.columns:
-        nuevo_estudiante = pd.get_dummies(nuevo_estudiante, columns=["tipo_actividad"], drop_first=True)
-    
-    # Separar columnas para modelo_compresion (sin nivel_comprension)
-    X_comp_modelo = X.drop(columns=["nivel_comprension"], errors='ignore')
-    for col in X_comp_modelo.columns:
-        if col not in nuevo_estudiante.columns:
-            nuevo_estudiante[col] = 0
-    nuevo_estudiante_comp = nuevo_estudiante[X_comp_modelo.columns]
-    
-    # Predicción comprensión
-    comprension = modelo_compresion.predict(nuevo_estudiante_comp)[0]
-
-    # Agregar nivel_comprension al DataFrame antes de predecir éxito
-    nuevo_estudiante["nivel_comprension"] = comprension
-
-    # Separar columnas para modelo_exito (X usado en entrenamiento de exito)
-    X_exito_modelo = X.drop(columns=["exito"], errors='ignore')
-    for col in X_exito_modelo.columns:
-        if col not in nuevo_estudiante.columns:
-            nuevo_estudiante[col] = 0
-    nuevo_estudiante_exito = nuevo_estudiante[X_exito_modelo.columns]
-
-    # Predicción probabilidad de éxito
-    prob_exito = modelo_exito.predict_proba(nuevo_estudiante_exito)[:,1][0]
-
-    # Recomendaciones
-    recomendaciones = []
-    if comprension < 0.4:
-        recomendaciones.append("Actividades de repaso básico")
-    elif comprension < 0.7:
-        recomendaciones.append("Actividades intermedias con apoyo visual")
-    else:
-        recomendaciones.append("Actividades avanzadas con menos pistas")
-    
-    if prob_exito < 0.5:
-        recomendaciones.append("Reducir dificultad o dar más pistas")
-    else:
-        recomendaciones.append("Incrementar dificultad progresivamente")
-    
-    return {
-        "nivel_comprension": comprension,
-        "prob_exito": prob_exito,
-        "recomendaciones": recomendaciones
+    # 5️⃣ Guardar modelo
+    os.makedirs(os.path.dirname(guardar_modelo), exist_ok=True)
+    # ⚡ Opcional: guardar copia de seguridad antes de sobrescribir
+    if os.path.exists(guardar_modelo):
+        import shutil, time
+        timestamp = int(time.time())
+        shutil.copy(guardar_modelo, f"{guardar_modelo}_{timestamp}.bak")
+    artefacto = {
+        "modelo_compresion": modelo_compresion,
+        "modelo_exito": modelo_exito,
+        "columnas": X_exito.columns.tolist()
     }
-
-
-# Guardar los dos modelos y las columnas de entrenamiento
-artefacto = {
-    "modelo_compresion": modelo_compresion,
-    "modelo_exito": modelo_exito,
-    "columnas": X.columns.tolist()
-}
-
-joblib.dump(artefacto, "/Users/km/Documents/VSPROJ/ML_Predidtion_rend/Performance_predition/ml_predice/app/model.pkl")
-print("✅ Modelos guardados en model.pkl")
+    joblib.dump(artefacto, guardar_modelo)
+    print(f"✅ Modelos guardados en {guardar_modelo}")

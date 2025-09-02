@@ -1,41 +1,47 @@
+import os
 from flask import Flask, request, jsonify
 import pandas as pd
 import joblib
+import train_model  # tu función de entrenamiento actualizada
 
-# Cargar los modelos y columnas
-artefacto = joblib.load("app/model.pkl")
-modelo_compresion = artefacto["modelo_compresion"]
-modelo_exito = artefacto["modelo_exito"]
-columnas = artefacto["columnas"]
-
-# Inicializar Flask
 app = Flask(__name__)
 
-# Reutilizamos tu función de recomendación
+UPLOAD_FOLDER = "datos"
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+MODEL_PATH = "app/model.pkl"
+
+# ============================
+# 1️⃣ Cargar modelo existente si hay
+# ============================
+if os.path.exists(MODEL_PATH):
+    artefacto = joblib.load(MODEL_PATH)
+    modelo_compresion = artefacto["modelo_compresion"]
+    modelo_exito = artefacto["modelo_exito"]
+    columnas = artefacto["columnas"]
+else:
+    modelo_compresion = modelo_exito = columnas = None
+
+# ============================
+# 2️⃣ Endpoint para predecir
+# ============================
 def recomendar_actividad_dict(datos_estudiante, columnas, modelo_compresion, modelo_exito):
     nuevo_estudiante = pd.DataFrame([datos_estudiante])
 
-    # Binarizar tipo_actividad
     if "tipo_actividad" in nuevo_estudiante.columns:
         nuevo_estudiante = pd.get_dummies(nuevo_estudiante, columns=["tipo_actividad"], drop_first=True)
-    
-    # Aseguramos que tenga todas las columnas que vio en el entrenamiento
+
     for col in columnas:
         if col not in nuevo_estudiante.columns:
             nuevo_estudiante[col] = 0
     nuevo_estudiante = nuevo_estudiante[columnas]
 
-    # Predicciones
-    # Columnas para compresión (sin 'nivel_comprension')
     X_comp_modelo = [c for c in columnas if c != "nivel_comprension"]
     comprension = modelo_compresion.predict(nuevo_estudiante[X_comp_modelo])[0]
 
-    # Agregar predicción al DataFrame para el modelo de éxito
     nuevo_estudiante["nivel_comprension"] = comprension
-    prob_exito = modelo_exito.predict_proba(nuevo_estudiante)[0, 1]
+    prob_exito = modelo_exito.predict_proba(nuevo_estudiante)[0,1]
 
-
-    # Reglas de recomendación
     recomendaciones = []
     if comprension < 0.4:
         recomendaciones.append("Actividades de repaso básico")
@@ -55,15 +61,61 @@ def recomendar_actividad_dict(datos_estudiante, columnas, modelo_compresion, mod
         "recomendaciones": recomendaciones
     }
 
-# Endpoint para predicción
 @app.route("/predict", methods=["POST"])
 def predict():
     try:
+        if modelo_compresion is None or modelo_exito is None:
+            return jsonify({"error": "Modelo no entrenado"}), 400
         datos = request.get_json()
         resultado = recomendar_actividad_dict(datos, columnas, modelo_compresion, modelo_exito)
         return jsonify(resultado)
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+# ============================
+# 3️⃣ Endpoint para subir CSV
+# ============================
+@app.route("/upload_csv", methods=["POST"])
+def upload_csv():
+    if "file" not in request.files:
+        return jsonify({"error": "No se encontró archivo"}), 400
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"error": "Nombre de archivo vacío"}), 400
+
+    filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+    file.save(filepath)
+    return jsonify({"mensaje": f"Archivo recibido: {file.filename}", "ruta": filepath})
+
+# ============================
+# 4️⃣ Endpoint para reentrenar acumulando CSVs
+# ============================
+@app.route("/retrain", methods=["POST"])
+def retrain():
+    global modelo_compresion, modelo_exito, columnas
+    try:
+        data = request.json
+        filepath = data.get("filepath")
+
+        # Verificar archivo
+        if not filepath or not os.path.exists(filepath):
+            return jsonify({"error": "Archivo no encontrado"}), 400
+
+        # Entrenar acumulando todos los CSV
+        train_model.train_model(ruta_csv=filepath, carpeta_dataset=UPLOAD_FOLDER, guardar_modelo=MODEL_PATH)
+
+        # Recargar modelo en memoria
+        artefacto = joblib.load(MODEL_PATH)
+        modelo_compresion = artefacto["modelo_compresion"]
+        modelo_exito = artefacto["modelo_exito"]
+        columnas = artefacto["columnas"]
+
+        return jsonify({"mensaje": f"Modelo reentrenado con {filepath}"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+# ============================
+# 5️⃣ Run Flask
+# ============================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

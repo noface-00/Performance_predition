@@ -1,20 +1,20 @@
-# Imagen base
-FROM python:3.13.7
+# 1️⃣ Imagen base
+FROM python:3.13-slim
 
-# Crear directorio de trabajo
+# 2️⃣ Crear carpeta de trabajo
 WORKDIR /app
 
-# Copiar dependencias
+# 3️⃣ Copiar requirements y código
 COPY requirements.txt .
-
-# Instalar dependencias
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copiar el código
 COPY app/ ./app
 
-# Exponer puerto
+# 4️⃣ Crear carpeta para CSVs subidos
+RUN mkdir -p /app/datos
+
+# 5️⃣ Exponer puerto Flask
 EXPOSE 5000
 
-# Comando para correr el servicio
+# 6️⃣ Entrypoint
 CMD ["python", "app/main.py"]

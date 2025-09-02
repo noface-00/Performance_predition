@@ -41,6 +41,6 @@ df["nivel_comprension"] = (
 df["nivel_comprension"] = df["nivel_comprension"].clip(0, 1)
 
 # Guardar CSV
-file_path = "/Users/km/Documents/VSPROJ/ML_Predidtion_rend/Performance_predition/datos/datos_actividades_1000.csv"
+file_path = "/Users/km/Downloads/prueba_flask1000.csv"
 df.to_csv(file_path, index=False)
 file_path
