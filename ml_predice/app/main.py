@@ -1,5 +1,5 @@
 import os
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect, url_for, flash
 import pandas as pd
 import joblib
 import train_model  # tu función de entrenamiento actualizada
@@ -72,6 +72,7 @@ def predict():
     except Exception as e:
         return jsonify({"error": str(e)}), 400
 
+
 # ============================
 # 3️⃣ Endpoint para subir CSV
 # ============================
@@ -113,7 +114,61 @@ def retrain():
         return jsonify({"mensaje": f"Modelo reentrenado con {filepath}"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    # Página principal con formulario
 
+
+@app.route("/", methods=["GET", "POST"])
+def index_page():
+    if request.method == "POST":
+        try:
+            datos = {
+                "edad": int(request.form["edad"]),
+                "grado": int(request.form["grado"]),
+                "tipo_actividad": request.form["tipo_actividad"],
+                "dificultad": int(request.form.get("dificultad", 1)),
+                "tiempo_seg": int(request.form.get("tiempo_seg", 100)),
+                "intentos": int(request.form.get("intentos", 1)),
+                "pistas": int(request.form.get("pistas", 0)),
+                "correcto": int(request.form.get("correcto", 1)),
+                "nota": int(request.form.get("nota", 7)),
+                "secuencia_actividades": int(request.form.get("secuencia_actividades",1)),
+                "evolucion_desempeno": float(request.form.get("evolucion_desempeno",0)),
+                "nivel_concentracion": float(request.form.get("nivel_concentracion",0.7)),
+                "comparacion_historial": float(request.form.get("comparacion_historial",0))
+            }
+            resultado = recomendar_actividad_dict(datos, columnas, modelo_compresion, modelo_exito)
+            return render_template("index.html", resultado=resultado)
+        except Exception as e:
+            flash(f"Error: {e}")
+            return redirect(url_for("index_page"))
+    return render_template("index.html", resultado=None)
+
+# Página para reentrenar subiendo CSV
+@app.route("/retrain_page", methods=["GET", "POST"])
+def retrain_page():
+    global modelo_compresion, modelo_exito, columnas
+    if request.method == "POST":
+        if "file" not in request.files:
+            flash("No se seleccionó archivo")
+            return redirect(url_for("retrain_page"))
+        file = request.files["file"]
+        if file.filename == "":
+            flash("Nombre de archivo vacío")
+            return redirect(url_for("retrain_page"))
+        filepath = os.path.join(UPLOAD_FOLDER, file.filename)
+        file.save(filepath)
+        train_model.train_model(ruta_csv=filepath, carpeta_dataset=UPLOAD_FOLDER, guardar_modelo=MODEL_PATH)
+
+        # Recargar modelo
+        artefacto = joblib.load(MODEL_PATH)
+        modelo_compresion = artefacto["modelo_compresion"]
+        modelo_exito = artefacto["modelo_exito"]
+        columnas = artefacto["columnas"]
+
+        flash("Modelo reentrenado correctamente ✅")
+        return redirect(url_for("retrain_page"))
+
+    return render_template("retrain.html")
 # ============================
 # 5️⃣ Run Flask
 # ============================

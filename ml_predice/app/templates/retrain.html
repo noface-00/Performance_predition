@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Reentrenar Modelo</title>
+</head>
+<body>
+  <h1>Reentrenar Modelo</h1>
+  <input type="file" id="csvFile" />
+  <button onclick="uploadCSV()">Subir y Reentrenar</button>
+  <pre id="output"></pre>
+
+  <script>
+    async function uploadCSV() {
+      const fileInput = document.getElementById("csvFile");
+      if (fileInput.files.length === 0) {
+        alert("Selecciona un archivo CSV");
+        return;
+      }
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      // Subir CSV
+      const uploadResp = await fetch("/upload_csv", {
+        method: "POST",
+        body: formData
+      });
+      const uploadData = await uploadResp.json();
+      document.getElementById("output").innerText = JSON.stringify(uploadData, null, 2);
+
+      if (uploadData.ruta) {
+        // Reentrenar
+        const retrainResp = await fetch("/retrain", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ filepath: uploadData.ruta })
+        });
+        const retrainData = await retrainResp.json();
+        document.getElementById("output").innerText += "\n" + JSON.stringify(retrainData, null, 2);
+      }
+    }
+  </script>
+</body>
+</html>
