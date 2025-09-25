@@ -6,8 +6,7 @@ import train_model  # tu función de entrenamiento actualizada
 
 app = Flask(__name__)
 
-UPLOAD_FOLDER = "datos"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+UPLOAD_FOLDER = "app/datos"
 
 MODEL_PATH = "app/model.pkl"
 
@@ -97,6 +96,7 @@ def retrain():
     try:
         data = request.json
         filepath = data.get("filepath")
+        print(filepath)
 
         # Verificar archivo
         if not filepath or not os.path.exists(filepath):
@@ -113,6 +113,7 @@ def retrain():
 
         return jsonify({"mensaje": f"Modelo reentrenado con {filepath}"})
     except Exception as e:
+        print(e)
         return jsonify({"error": str(e)}), 500
     # Página principal con formulario
 
@@ -139,6 +140,7 @@ def index_page():
             resultado = recomendar_actividad_dict(datos, columnas, modelo_compresion, modelo_exito)
             return render_template("index.html", resultado=resultado)
         except Exception as e:
+            print(e)
             flash(f"Error: {e}")
             return redirect(url_for("index_page"))
     return render_template("index.html", resultado=None)

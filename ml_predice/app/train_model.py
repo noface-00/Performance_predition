@@ -7,7 +7,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 
-def train_model(ruta_csv=None, carpeta_dataset="datos", guardar_modelo="app/model.pkl"):
+def train_model(ruta_csv=None, carpeta_dataset="app/datos", guardar_modelo="app/model.pkl"):
     """
     Entrena modelos usando todos los CSV en carpeta_dataset + ruta_csv opcional.
     """
