@@ -1,43 +1,319 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>Reentrenar Modelo</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reentrenar Modelo - Predicción Estudiantil</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="static/style_retrain.css" rel="stylesheet"> <!-- CSS externo -->
 </head>
 <body>
-  <h1>Reentrenar Modelo</h1>
-  <input type="file" id="csvFile" />
-  <button onclick="uploadCSV()">Subir y Reentrenar</button>
-  <pre id="output"></pre>
+    <div class="container-fluid">
+        <div class="main-card">
+            <!-- Header Section -->
+            <div class="header-section">
+                <div class="header-content">
+                    <a href="/" class="back-link">
+                        <i class="fas fa-arrow-left"></i>
+                        Volver al Predictor
+                    </a>
+                    <h1 class="header-title">
+                        <i class="fas fa-sync-alt"></i>
+                        Reentrenamiento del Modelo
+                    </h1>
+                    <p class="header-subtitle">
+                        Mejora la precisión del sistema con nuevos datos de entrenamiento
+                    </p>
+                </div>
+            </div>
 
-  <script>
-    async function uploadCSV() {
-      const fileInput = document.getElementById("csvFile");
-      if (fileInput.files.length === 0) {
-        alert("Selecciona un archivo CSV");
-        return;
-      }
-      const formData = new FormData();
-      formData.append("file", fileInput.files[0]);
+            <div class="content-section">
+                <!-- Information Card -->
+                <div class="info-card">
+                    <h3 class="info-title">
+                        <i class="fas fa-info-circle"></i>
+                        Instrucciones para el Reentrenamiento
+                    </h3>
+                    <p>Sube un archivo CSV con nuevos datos de estudiantes para mejorar las predicciones del modelo. El archivo debe contener todas las columnas requeridas en el formato correcto.</p>
+                    
+                    <h5 class="mt-3">
+                        <i class="fas fa-table"></i>
+                        Formato requerido del CSV:
+                    </h5>
+                    <div class="format-example">
+edad,grado,tipo_actividad,dificultad,tiempo_seg,intentos,pistas,correcto,nota,secuencia_actividades,evolucion_desempeno,nivel_concentracion,comparacion_historial,nivel_comprension,exito
+12,6,crucigrama,2,180,2,1,1,8,1,0.5,0.8,0.2,0.75,1
+10,4,sopa_letras,1,240,3,2,1,7,2,0.3,0.7,0.1,0.65,1
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-check-circle text-success"></i> Campos Obligatorios:</h6>
+                            <ul class="list-unstyled ms-3">
+                                <li>• edad, grado, tipo_actividad</li>
+                                <li>• tiempo_seg, intentos, pistas</li>
+                                <li>• correcto, nota</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-star text-warning"></i> Campos Opcionales:</h6>
+                            <ul class="list-unstyled ms-3">
+                                <li>• dificultad, secuencia_actividades</li>
+                                <li>• nivel_concentracion, evolucion_desempeno</li>
+                                <li>• comparacion_historial</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
 
-      // Subir CSV
-      const uploadResp = await fetch("/upload_csv", {
-        method: "POST",
-        body: formData
-      });
-      const uploadData = await uploadResp.json();
-      document.getElementById("output").innerText = JSON.stringify(uploadData, null, 2);
+                <!-- Upload Area -->
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </div>
+                    <div class="upload-text">Arrastra tu archivo CSV aquí</div>
+                    <div class="upload-subtext">o haz clic para seleccionar desde tu computadora</div>
+                    <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                    
+                    <div class="file-info" id="fileInfo">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <i class="fas fa-file-csv text-success me-2"></i>
+                                <span id="fileName">archivo.csv</span>
+                            </div>
+                            <div>
+                                <span id="fileSize" class="text-muted">0 KB</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
-      if (uploadData.ruta) {
-        // Reentrenar
-        const retrainResp = await fetch("/retrain", {
-          method: "POST",
-          headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ filepath: uploadData.ruta })
+                <!-- Upload Button -->
+                <div class="text-center">
+                    <button class="btn-upload" id="uploadBtn" onclick="uploadCSV()">
+                        <i class="fas fa-upload me-2"></i>
+                        Subir y Reentrenar Modelo
+                    </button>
+                </div>
+
+                <!-- Progress Section -->
+                <div class="progress-section" id="progressSection">
+                    <div class="progress-card">
+                        <h4>
+                            <i class="fas fa-cogs me-2"></i>
+                            Progreso del Reentrenamiento
+                        </h4>
+                        <div id="currentStep" class="mb-2">Preparando archivos...</div>
+                        <div class="progress-bar-custom">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="text-center">
+                            <span id="progressText">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Output Section -->
+                <div class="output-section" id="outputSection">
+                    <div class="status-badge status-processing" id="statusBadge">
+                        <div class="spinner"></div>
+                        Procesando...
+                    </div>
+                    <div class="output-card">
+                        <pre id="output">Esperando resultados...</pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('csvFile');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const fileInfo = document.getElementById('fileInfo');
+        const fileName = document.getElementById('fileName');
+        const fileSize = document.getElementById('fileSize');
+        const progressSection = document.getElementById('progressSection');
+        const outputSection = document.getElementById('outputSection');
+        const output = document.getElementById('output');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+        const currentStep = document.getElementById('currentStep');
+        const statusBadge = document.getElementById('statusBadge');
+
+        // Click to select file
+        uploadArea.addEventListener('click', () => {
+            fileInput.click();
         });
-        const retrainData = await retrainResp.json();
-        document.getElementById("output").innerText += "\n" + JSON.stringify(retrainData, null, 2);
-      }
-    }
-  </script>
+
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].name.endsWith('.csv')) {
+                fileInput.files = files;
+                handleFileSelect(files[0]);
+            } else {
+                alert('Por favor, selecciona un archivo CSV válido.');
+            }
+        });
+
+        // File input change
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            // Update file info
+            fileName.textContent = file.name;
+            fileSize.textContent = formatFileSize(file.size);
+            
+            // Show file info
+            fileInfo.classList.add('show');
+            
+            // Update upload area appearance
+            uploadArea.classList.add('file-selected');
+            uploadArea.innerHTML = `
+                <div class="upload-icon">
+                    <i class="fas fa-file-csv"></i>
+                </div>
+                <div class="upload-text">Archivo seleccionado: ${file.name}</div>
+                <div class="upload-subtext">Listo para subir y reentrenar</div>
+            `;
+            
+            // Enable upload button
+            uploadBtn.classList.add('enabled');
+            uploadBtn.disabled = false;
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        async function uploadCSV() {
+            if (fileInput.files.length === 0) {
+                alert("Por favor, selecciona un archivo CSV");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+
+            // Show progress section
+            progressSection.style.display = 'block';
+            outputSection.style.display = 'block';
+            
+            // Disable upload button
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<div class="spinner"></div> Procesando...';
+
+            try {
+                // Step 1: Upload file
+                updateProgress(25, 'Subiendo archivo CSV...');
+                
+                const uploadResp = await fetch("/upload_csv", {
+                    method: "POST",
+                    body: formData
+                });
+                const uploadData = await uploadResp.json();
+                
+                output.textContent = JSON.stringify(uploadData, null, 2);
+                
+                if (uploadData.error) {
+                    throw new Error(uploadData.error);
+                }
+
+                // Step 2: Retrain model
+                updateProgress(50, 'Iniciando reentrenamiento...');
+                
+                const retrainResp = await fetch("/retrain", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({ filepath: uploadData.ruta })
+                });
+                const retrainData = await retrainResp.json();
+                
+                updateProgress(75, 'Validando modelo...');
+                
+                // Step 3: Complete
+                updateProgress(100, 'Reentrenamiento completado');
+                
+                output.textContent += "\n\n" + JSON.stringify(retrainData, null, 2);
+                
+                if (retrainData.error) {
+                    throw new Error(retrainData.error);
+                }
+                
+                // Success
+                statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Completado exitosamente';
+                statusBadge.className = 'status-badge status-success';
+                
+                // Show success message
+                setTimeout(() => {
+                    if (confirm('¡Modelo reentrenado exitosamente! ¿Deseas volver al predictor?')) {
+                        window.location.href = '/';
+                    }
+                }, 2000);
+                
+            } catch (error) {
+                // Error handling
+                statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error en el proceso';
+                statusBadge.className = 'status-badge status-error';
+                
+                output.textContent += "\n\nError: " + error.message;
+                
+                updateProgress(0, 'Error en el reentrenamiento');
+                progressFill.style.background = 'var(--danger-gradient)';
+            }
+            
+            // Re-enable upload button
+            uploadBtn.disabled = false;
+            uploadBtn.innerHTML = '<i class="fas fa-upload me-2"></i> Subir y Reentrenar Modelo';
+        }
+
+        function updateProgress(percent, stepText) {
+            progressFill.style.width = percent + '%';
+            progressText.textContent = percent + '%';
+            currentStep.textContent = stepText;
+        }
+
+        // Add some loading animations
+        function showLoadingAnimation() {
+            const dots = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+            let i = 0;
+            
+            const interval = setInterval(() => {
+                if (statusBadge.classList.contains('status-processing')) {
+                    statusBadge.innerHTML = `${dots[i]} Procesando...`;
+                    i = (i + 1) % dots.length;
+                } else {
+                    clearInterval(interval);
+                }
+            }, 100);
+        }
+    </script>
 </body>
 </html>
