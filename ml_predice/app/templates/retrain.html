@@ -222,11 +222,11 @@ edad,grado,tipo_actividad,dificultad,tiempo_seg,intentos,pistas,correcto,nota,se
             const formData = new FormData();
             formData.append("file", file);
 
-            // Show progress section
+            // Mostrar graficas de progeso
             progressSection.style.display = 'block';
             outputSection.style.display = 'block';
             
-            // Disable upload button
+            // Desabilitar boton de subir csv
             uploadBtn.disabled = true;
             uploadBtn.innerHTML = '<div class="spinner"></div> Procesando...';
 
@@ -246,7 +246,6 @@ edad,grado,tipo_actividad,dificultad,tiempo_seg,intentos,pistas,correcto,nota,se
                     throw new Error(uploadData.error);
                 }
 
-                // Step 2: Retrain model
                 updateProgress(50, 'Iniciando reentrenamiento...');
                 
                 const retrainResp = await fetch("/retrain", {
@@ -258,7 +257,6 @@ edad,grado,tipo_actividad,dificultad,tiempo_seg,intentos,pistas,correcto,nota,se
                 
                 updateProgress(75, 'Validando modelo...');
                 
-                // Step 3: Complete
                 updateProgress(100, 'Reentrenamiento completado');
                 
                 output.textContent += "\n\n" + JSON.stringify(retrainData, null, 2);
@@ -267,19 +265,16 @@ edad,grado,tipo_actividad,dificultad,tiempo_seg,intentos,pistas,correcto,nota,se
                     throw new Error(retrainData.error);
                 }
                 
-                // Success
                 statusBadge.innerHTML = '<i class="fas fa-check-circle"></i> Completado exitosamente';
                 statusBadge.className = 'status-badge status-success';
                 
-                // Show success message
                 setTimeout(() => {
                     if (confirm('¡Modelo reentrenado exitosamente! ¿Deseas volver al predictor?')) {
                         window.location.href = '/';
                     }
                 }, 2000);
-                
+                // Manejo de errores
             } catch (error) {
-                // Error handling
                 statusBadge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Error en el proceso';
                 statusBadge.className = 'status-badge status-error';
                 
@@ -289,7 +284,7 @@ edad,grado,tipo_actividad,dificultad,tiempo_seg,intentos,pistas,correcto,nota,se
                 progressFill.style.background = 'var(--danger-gradient)';
             }
             
-            // Re-enable upload button
+            // Habilitacion de boton de subir csv
             uploadBtn.disabled = false;
             uploadBtn.innerHTML = '<i class="fas fa-upload me-2"></i> Subir y Reentrenar Modelo';
         }
@@ -300,7 +295,6 @@ edad,grado,tipo_actividad,dificultad,tiempo_seg,intentos,pistas,correcto,nota,se
             currentStep.textContent = stepText;
         }
 
-        // Add some loading animations
         function showLoadingAnimation() {
             const dots = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
             let i = 0;

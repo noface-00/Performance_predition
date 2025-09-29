@@ -10,18 +10,26 @@ import numpy as np
 def train_model(ruta_csv=None, carpeta_dataset="app/datos", guardar_modelo="app/model.pkl"):
     """
     Entrena modelos usando todos los CSV en carpeta_dataset + ruta_csv opcional.
+    Guarda el modelo entrenado en guardar_modelo.
+    Parámetros:
+    - ruta_csv: Ruta a un CSV nuevo para agregar al dataset (opcional).
+    - carpeta_dataset: Carpeta donde se almacenan los CSV acumulados.
+    - guardar_modelo: Ruta donde se guardará el modelo entrenado.
+    Retorna:
+    - None (los modelos se guardan en disco).
+    
     """
-    # 1️⃣ Crear carpeta si no existe
+    #Crea carpeta si no existe
     os.makedirs(carpeta_dataset, exist_ok=True)
 
-    # 2️⃣ Guardar CSV nuevo si se pasa
+    #Guarda CSV nuevo si se pasa
     if ruta_csv:
         nombre = os.path.basename(ruta_csv)
         destino = os.path.join(carpeta_dataset, nombre)
         os.rename(ruta_csv, destino)
         print(f"Archivo {nombre} agregado a {carpeta_dataset}")
 
-    # 3️⃣ Cargar todos los CSV acumulados
+    #Carga todos los CSV acumulados
     archivos = [os.path.join(carpeta_dataset, f) for f in os.listdir(carpeta_dataset) if f.endswith(".csv")]
     if not archivos:
         raise FileNotFoundError("No hay archivos CSV en la carpeta de dataset.")
@@ -30,7 +38,7 @@ def train_model(ruta_csv=None, carpeta_dataset="app/datos", guardar_modelo="app/
     df_total = pd.concat(dfs, ignore_index=True)
     print(f"Entrenando con {len(df_total)} filas de {len(archivos)} archivos")
 
-    # 4️⃣ Preprocesamiento
+    #Preprocesamiento
     le = LabelEncoder()
     df_total["tipo_actividad"] = le.fit_transform(df_total["tipo_actividad"])
 
@@ -60,7 +68,7 @@ def train_model(ruta_csv=None, carpeta_dataset="app/datos", guardar_modelo="app/
     print("Accuracy exito:", accuracy_score(y_test, y_pred))
     print("AUC ROC exito:", roc_auc_score(y_test, probs))
 
-    # 5️⃣ Guardar modelo
+    #Guardar modelo
     os.makedirs(os.path.dirname(guardar_modelo), exist_ok=True)
     # ⚡ Opcional: guardar copia de seguridad antes de sobrescribir
     if os.path.exists(guardar_modelo):
@@ -73,4 +81,4 @@ def train_model(ruta_csv=None, carpeta_dataset="app/datos", guardar_modelo="app/
         "columnas": X_exito.columns.tolist()
     }
     joblib.dump(artefacto, guardar_modelo)
-    print(f"✅ Modelos guardados en {guardar_modelo}")
+    print(f"Modelos guardados en {guardar_modelo}")

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,6 +9,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="static/style_main.css" rel="stylesheet"> <!-- CSS externo -->
 </head>
+
 <body>
     <div class="container-fluid">
         <div class="main-card">
@@ -16,10 +18,10 @@
                 <div class="header-content">
                     <h1 class="header-title">
                         <i class="fas fa-brain"></i>
-                        Sistema Predictivo Estudiantil
+                        Modelo de Predicción de Comportamiento Estudiantil
                     </h1>
                     <p class="header-subtitle">
-                        Análisis inteligente del comportamiento y rendimiento académico
+                        Análisis de comportamiento y rendimiento académico
                     </p>
                 </div>
             </div>
@@ -28,7 +30,8 @@
             <div class="form-section">
                 <ul class="nav nav-pills justify-content-center" id="mainTabs" role="tablist">
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="predict-tab" data-bs-toggle="pill" data-bs-target="#predict-pane" type="button" role="tab">
+                        <button class="nav-link active" id="predict-tab" data-bs-toggle="pill"
+                            data-bs-target="#predict-pane" type="button" role="tab">
                             <i class="fas fa-chart-line me-2"></i>Predicción
                         </button>
                     </li>
@@ -51,14 +54,14 @@
                                         Información del Estudiante
                                     </h4>
                                 </div>
-                                
+
                                 <div class="col-md-6">
                                     <label for="edad" class="form-label">
                                         <i class="fas fa-calendar-alt"></i>
                                         Edad del Estudiante
                                     </label>
-                                    <input type="number" id="edad" name="edad" class="form-control" 
-                                           min="5" max="25" required placeholder="Ingrese la edad">
+                                    <input type="number" id="edad" name="edad" class="form-control" min="5" max="25"
+                                        required placeholder="Ingrese la edad">
                                     <div class="form-text">Edad en años (5-25)</div>
                                 </div>
 
@@ -67,8 +70,8 @@
                                         <i class="fas fa-graduation-cap"></i>
                                         Grado Académico
                                     </label>
-                                    <input type="number" id="grado" name="grado" class="form-control" 
-                                           min="1" max="12" required placeholder="Grado escolar">
+                                    <input type="number" id="grado" name="grado" class="form-control" min="1" max="12"
+                                        required placeholder="Grado escolar">
                                     <div class="form-text">Grado académico (1-12)</div>
                                 </div>
 
@@ -87,10 +90,10 @@
                                     </label>
                                     <select id="tipo_actividad" name="tipo_actividad" class="form-select" required>
                                         <option value="">Seleccionar actividad...</option>
-                                        <option value="sopa_letras">🔍 Sopa de Letras</option>
-                                        <option value="crucigrama">🧩 Crucigrama</option>
-                                        <option value="relacionar">🔗 Relacionar Conceptos</option>
-                                        <option value="memoria">🧠 Juego de Memoria</option>
+                                        <option value="sopa_letras">Sopa de Letras</option>
+                                        <option value="crucigrama">Crucigrama</option>
+                                        <option value="relacionar">Relacionar Conceptos</option>
+                                        <option value="memoria">Juego de Memoria</option>
                                     </select>
                                 </div>
 
@@ -118,10 +121,10 @@
                                 <div class="col-md-4">
                                     <label for="tiempo_seg" class="form-label">
                                         <i class="fas fa-clock"></i>
-                                        Tiempo (segundos)
+                                        Tiempo (s)
                                     </label>
-                                    <input type="number" id="tiempo_seg" name="tiempo_seg" class="form-control" 
-                                           min="1" value="100" placeholder="Tiempo empleado">
+                                    <input type="number" id="tiempo_seg" name="tiempo_seg" class="form-control" min="1"
+                                        value="100" placeholder="Tiempo empleado">
                                 </div>
 
                                 <div class="col-md-4">
@@ -129,8 +132,8 @@
                                         <i class="fas fa-redo"></i>
                                         Número de Intentos
                                     </label>
-                                    <input type="number" id="intentos" name="intentos" class="form-control" 
-                                           min="1" value="1" placeholder="Intentos realizados">
+                                    <input type="number" id="intentos" name="intentos" class="form-control" min="1"
+                                        value="1" placeholder="Intentos realizados">
                                 </div>
 
                                 <div class="col-md-4">
@@ -138,8 +141,8 @@
                                         <i class="fas fa-lightbulb"></i>
                                         Pistas Utilizadas
                                     </label>
-                                    <input type="number" id="pistas" name="pistas" class="form-control" 
-                                           min="0" value="0" placeholder="Número de pistas">
+                                    <input type="number" id="pistas" name="pistas" class="form-control" min="0"
+                                        value="0" placeholder="Número de pistas">
                                 </div>
 
                                 <!-- Campos Adicionales -->
@@ -156,8 +159,8 @@
                                         Respuesta Correcta
                                     </label>
                                     <select id="correcto" name="correcto" class="form-select">
-                                        <option value="1">✅ Sí</option>
-                                        <option value="0">❌ No</option>
+                                        <option value="1">Sí</option>
+                                        <option value="0">No</option>
                                     </select>
                                 </div>
 
@@ -166,8 +169,8 @@
                                         <i class="fas fa-star"></i>
                                         Nota (1-10)
                                     </label>
-                                    <input type="number" id="nota" name="nota" class="form-control" 
-                                           min="1" max="10" value="7" placeholder="Calificación">
+                                    <input type="number" id="nota" name="nota" class="form-control" min="1" max="10"
+                                        value="7" placeholder="Calificación">
                                 </div>
 
                                 <div class="col-md-3">
@@ -175,9 +178,9 @@
                                         <i class="fas fa-focus"></i>
                                         Concentración (0-1)
                                     </label>
-                                    <input type="number" id="nivel_concentracion" name="nivel_concentracion" 
-                                           class="form-control" min="0" max="1" step="0.1" value="0.7" 
-                                           placeholder="Nivel de concentración">
+                                    <input type="number" id="nivel_concentracion" name="nivel_concentracion"
+                                        class="form-control" min="0" max="1" step="0.1" value="0.7"
+                                        placeholder="Nivel de concentración">
                                 </div>
 
                                 <div class="col-md-3">
@@ -185,9 +188,8 @@
                                         <i class="fas fa-list-ol"></i>
                                         Secuencia
                                     </label>
-                                    <input type="number" id="secuencia_actividades" name="secuencia_actividades" 
-                                           class="form-control" min="1" value="1" 
-                                           placeholder="Número en secuencia">
+                                    <input type="number" id="secuencia_actividades" name="secuencia_actividades"
+                                        class="form-control" min="1" value="1" placeholder="Número en secuencia">
                                 </div>
 
                                 <!-- Submit Button -->
@@ -213,14 +215,14 @@
                                 <i class="fas fa-chart-pie text-primary me-2"></i>
                                 Resultados del Análisis Predictivo
                             </h3>
-                            
+
                             <div class="stats-grid">
                                 <div class="metric-card">
                                     <div class="metric-label">Nivel de Comprensión</div>
                                     <div class="metric-value">{{ "%.2f"|format(resultado.nivel_comprension) }}</div>
                                     <div class="metric-description">Evaluación cognitiva</div>
                                 </div>
-                                
+
                                 <div class="metric-card">
                                     <div class="metric-label">Probabilidad de Éxito</div>
                                     <div class="metric-value">{{ "%.1f"|format(resultado.prob_exito * 100) }}%</div>
@@ -258,16 +260,16 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <script>
         // Form validation and enhancement
-        document.getElementById('predictionForm').addEventListener('submit', function(e) {
+        document.getElementById('predictionForm').addEventListener('submit', function (e) {
             const loadingSpinner = document.getElementById('loadingSpinner');
             const submitBtn = document.querySelector('.btn-predict');
-            
+
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Analizando...';
             submitBtn.disabled = true;
-            
+
             setTimeout(() => {
                 submitBtn.innerHTML = '<i class="fas fa-chart-bar me-2"></i>Realizar Predicción';
                 submitBtn.disabled = false;
@@ -276,18 +278,18 @@
 
         // Interactive animations
         document.querySelectorAll('.form-control, .form-select').forEach(element => {
-            element.addEventListener('focus', function() {
+            element.addEventListener('focus', function () {
                 this.parentElement.style.transform = 'scale(1.02)';
                 this.parentElement.style.transition = 'transform 0.3s ease';
             });
-            
-            element.addEventListener('blur', function() {
+
+            element.addEventListener('blur', function () {
                 this.parentElement.style.transform = 'scale(1)';
             });
         });
 
         document.querySelectorAll('.recommendation-item').forEach(item => {
-            item.addEventListener('click', function() {
+            item.addEventListener('click', function () {
                 this.style.transform = 'scale(0.98)';
                 setTimeout(() => {
                     this.style.transform = 'translateX(5px)';
@@ -296,7 +298,7 @@
         });
 
         // Auto-fill grade based on age
-        document.getElementById('edad').addEventListener('change', function() {
+        document.getElementById('edad').addEventListener('change', function () {
             const edad = parseInt(this.value);
             const gradoField = document.getElementById('grado');
             if (edad >= 6 && edad <= 18 && !gradoField.value) {
@@ -308,4 +310,5 @@
         });
     </script>
 </body>
+
 </html>

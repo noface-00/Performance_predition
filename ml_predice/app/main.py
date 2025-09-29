@@ -22,10 +22,14 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(os.path.dirname(MODEL_PATH), exist_ok=True)
 
 # ============================
-# 1️⃣ Cargar modelo existente si hay
+# 1. Carga el modelo existente
 # ============================
 def cargar_modelo():
-    """Función para cargar el modelo y manejar errores"""
+    """
+    Función para cargar el modelo y manejar errores
+    Retorna True si el modelo se carga correctamente, False en caso contrario
+    """
+
     global modelo_compresion, modelo_exito, columnas
     
     if os.path.exists(MODEL_PATH):
@@ -49,16 +53,24 @@ def cargar_modelo():
 modelo_cargado = cargar_modelo()
 
 # ============================
-# 2️⃣ Función mejorada de predicción
+# 2️. Función para recomendar actividades a medida de la prediccion
 # ============================
 def recomendar_actividad_dict(datos_estudiante, columnas, modelo_compresion, modelo_exito):
     """
     Función mejorada para generar recomendaciones con mejor manejo de errores
+    y análisis más detallado basado en las predicciones.
+    Datos de entrada:
+    - datos_estudiante: dict con datos del estudiante
+    - columnas: lista de columnas esperadas por el modelo
+    - modelo_compresion: modelo para predecir nivel de comprensión
+    - modelo_exito: modelo para predecir probabilidad de éxito
+    Retorna:
+    - dict con nivel de comprensión, probabilidad de éxito y recomendaciones
     """
     try:
         nuevo_estudiante = pd.DataFrame([datos_estudiante])
         
-        # Validar datos de entrada
+        # Valida datos de entrada
         campos_requeridos = ['edad', 'grado', 'tipo_actividad']
         for campo in campos_requeridos:
             if campo not in nuevo_estudiante.columns:
@@ -68,7 +80,7 @@ def recomendar_actividad_dict(datos_estudiante, columnas, modelo_compresion, mod
         if "tipo_actividad" in nuevo_estudiante.columns:
             nuevo_estudiante = pd.get_dummies(nuevo_estudiante, columns=["tipo_actividad"], drop_first=True)
 
-        # Asegurar que tenemos todas las columnas necesarias
+        # Asegura que si tiene todas las columnas necesarias
         for col in columnas:
             if col not in nuevo_estudiante.columns:
                 nuevo_estudiante[col] = 0
@@ -145,7 +157,7 @@ def generar_recomendaciones_avanzadas(datos, comprension, prob_exito):
     return recomendaciones[:5]  # Limitar a 5 recomendaciones principales
 
 # ============================
-# 3️⃣ Endpoints mejorados
+# 3. Endpoints de API
 # ============================
 @app.route("/predict", methods=["POST"])
 def predict():
@@ -157,13 +169,13 @@ def predict():
                 "redirect": "/retrain_page"
             }), 400
 
-        # Obtener datos del request
+        # Obtiene datos del request
         if request.is_json:
             datos = request.get_json()
         else:
             return jsonify({"error": "Se requiere contenido JSON"}), 400
 
-        # Validar datos requeridos
+        # Valida datos requeridos
         campos_requeridos = ['edad', 'grado', 'tipo_actividad']
         for campo in campos_requeridos:
             if campo not in datos:
@@ -180,10 +192,10 @@ def predict():
         if datos['tipo_actividad'] not in tipos_validos:
             return jsonify({"error": f"Tipo de actividad debe ser uno de: {tipos_validos}"}), 400
 
-        # Realizar predicción
+        # Realiza predicción
         resultado = recomendar_actividad_dict(datos, columnas, modelo_compresion, modelo_exito)
         
-        # Registrar predicción
+        # Registra predicción
         logger.info(f"Predicción realizada: comprensión={resultado['nivel_comprension']:.3f}, éxito={resultado['prob_exito']:.3f}")
         
         return jsonify(resultado)
@@ -209,25 +221,25 @@ def upload_csv():
         if not file.filename.lower().endswith('.csv'):
             return jsonify({"error": "Solo se permiten archivos CSV"}), 400
 
-        # Generar nombre único para evitar conflictos
+        # Genera nombre único para evitar conflictos
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename_safe = f"{timestamp}_{file.filename}"
         filepath = os.path.join(UPLOAD_FOLDER, filename_safe)
         
-        # Guardar archivo
+        # Guarda archivo
         file.save(filepath)
         
-        # Validar contenido del CSV
+        # Valida contenido del CSV
         try:
             df = pd.read_csv(filepath)
             filas, columnas_count = df.shape
             
-            # Verificar columnas mínimas
+            # Verifica columnas mínimas
             columnas_minimas = ['edad', 'grado', 'tipo_actividad']
             columnas_faltantes = [col for col in columnas_minimas if col not in df.columns]
             
             if columnas_faltantes:
-                os.remove(filepath)  # Limpiar archivo inválido
+                os.remove(filepath) 
                 return jsonify({
                     "error": f"Columnas faltantes: {columnas_faltantes}",
                     "columnas_encontradas": list(df.columns),
@@ -246,7 +258,7 @@ def upload_csv():
             })
             
         except Exception as e:
-            # Limpiar archivo si hay error de lectura
+            # Limpia archivo si hay error de lectura
             if os.path.exists(filepath):
                 os.remove(filepath)
             return jsonify({"error": f"Error leyendo CSV: {str(e)}"}), 400
@@ -393,15 +405,15 @@ def retrain_page():
                 flash("❌ Solo se permiten archivos CSV", "error")
                 return redirect(url_for("retrain_page"))
 
-            # Generar nombre único
+            # Genera nombre único
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             filename_safe = f"{timestamp}_{file.filename}"
             filepath = os.path.join(UPLOAD_FOLDER, filename_safe)
             
-            # Guardar y validar archivo
+            # Guarda y validar archivo
             file.save(filepath)
             
-            # Validar CSV antes de entrenar
+            # Valida CSV antes de entrenar
             try:
                 df = pd.read_csv(filepath)
                 columnas_minimas = ['edad', 'grado', 'tipo_actividad']
@@ -419,14 +431,14 @@ def retrain_page():
                 flash(f"❌ Error leyendo CSV: {e}", "error")
                 return redirect(url_for("retrain_page"))
 
-            # Entrenar modelo
+            # Entrena modelo
             train_model.train_model(
                 ruta_csv=filepath, 
                 carpeta_dataset=UPLOAD_FOLDER, 
                 guardar_modelo=MODEL_PATH
             )
 
-            # Recargar modelo
+            # Recarga modelo
             if cargar_modelo():
                 flash("✅ Modelo reentrenado correctamente", "success")
                 logger.info(f"Modelo reentrenado exitosamente con {filename_safe}")
@@ -440,7 +452,7 @@ def retrain_page():
             flash(f"❌ Error en reentrenamiento: {e}", "error")
             return redirect(url_for("retrain_page"))
 
-    # Obtener estadísticas para mostrar en la página
+    # Se obtiene estadísticas para mostrar en la página
     archivos_csv = []
     if os.path.exists(UPLOAD_FOLDER):
         archivos_csv = [f for f in os.listdir(UPLOAD_FOLDER) if f.endswith('.csv')]
@@ -459,7 +471,7 @@ def retrain_page():
     return render_template("retrain.html", stats=stats)
 
 # ============================
-# 5️⃣ Endpoints adicionales de información
+# 5. Endpoints adicionales de información
 # ============================
 @app.route("/api/model_info", methods=["GET"])
 def model_info():
@@ -507,7 +519,7 @@ def health_check():
         }), 500
 
 # ============================
-# 6️⃣ Manejo de errores mejorado
+# 6. Manejo de errores
 # ============================
 @app.errorhandler(404)
 def not_found_error(error):
@@ -524,27 +536,8 @@ def handle_exception(e):
     return jsonify({"error": "Error interno del servidor"}), 500
 
 # ============================
-# 7️⃣ Inicialización y ejecución
+# 7. Inicialización y ejecución
 # ============================
 if __name__ == "__main__":
-    print("=" * 60)
-    print("🎓 SISTEMA DE PREDICCIÓN DE COMPORTAMIENTO ESTUDIANTIL")
-    print("=" * 60)
-    print(f"📅 Iniciando servidor: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-    print(f"🤖 Modelo cargado: {'✅ Sí' if modelo_cargado else '❌ No'}")
-    print(f"📁 Carpeta de datos: {UPLOAD_FOLDER}")
-    print(f"🔧 Ruta del modelo: {MODEL_PATH}")
-    print("=" * 60)
-    print("🌐 Endpoints disponibles:")
-    print("  GET  /                    - Página principal de predicción")
-    print("  POST /predict             - API de predicción (JSON)")
-    print("  GET  /retrain_page        - Página de reentrenamiento") 
-    print("  POST /upload_csv          - Subir archivo CSV")
-    print("  POST /retrain             - Reentrenar modelo")
-    print("  GET  /api/model_info      - Información del modelo")
-    print("  GET  /api/health          - Estado del sistema")
-    print("=" * 60)
-    print("🚀 Iniciando en http://localhost:5000")
-    print("=" * 60)
-    
+    logger.info("Iniciando servidor...")
     app.run(host="0.0.0.0", port=5000, debug=True)

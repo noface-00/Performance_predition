@@ -1,8 +1,3 @@
-/* ===================================
-   Sistema de Predicción Estudiantil
-   Archivo JavaScript Principal
-   =================================== */
-
 // ===== VARIABLES GLOBALES =====
 let isFormSubmitting = false;
 let uploadedFile = null;
